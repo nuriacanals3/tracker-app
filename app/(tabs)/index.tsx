@@ -1,75 +1,163 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import ActivityCard from '@/components/ActivityCard';
+import { useActivities } from '@/hooks/useActivities';
+import { Link } from 'expo-router';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+
 
 export default function HomeScreen() {
+  // State to manage connection status
+  // TEMP: this will be replaced with actual connection logic later
+  const [connected, setConnected] = useState(false);
+  const deviceName = connected ? 'Tracker' : null;
+
+  const { data, loading, error, refresh } = useActivities();
+
+  // Latest activity
+  const last = useMemo(() => {
+    if (!data || data.length === 0) return null;
+    const sorted = [...data].sort(
+      (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+    );
+    return sorted[0];
+  }, [data]);
+
+  const handlePrimaryPress = useCallback(() => {
+    // TEMP: toggle to see the UI change; later this will call connect/sync
+    setConnected((v) => !v);
+  }, []);
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <View style={styles.screen}>
+      <SafeAreaView style={{ backgroundColor: 'white' }} />
+      {/* Header */}
+      <View style={styles.headerBar}>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Home</Text>
+        </View>
+
+        <View style={styles.headerRight}>
+          <Pressable
+            onPress={handlePrimaryPress}
+            style={({ pressed }) => [styles.statusPill, connected ? styles.statusOn : styles.statusOff, pressed && { opacity: 0.8 }]}
+          >
+            <View style={[styles.statusDot, connected ? styles.dotOn : styles.dotOff]} />
+            <Text style={styles.statusText}>{connected ? `${deviceName ? ` ${deviceName}` : ''}` : 'Disconnected'}</Text>
+          </Pressable>
+        </View>
+      </View>
+
+      {/* Body */}
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.header}>Welcome Back!</Text>
+        {/* Widgets */}
+        <View>
+          <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 8 }}>Last Activity</Text>
+
+          {last ? (
+            <Link
+              asChild
+              href={{ pathname: '/activity/[id]', params: { id: last.id } }}
+            >
+              <Pressable>
+                <ActivityCard activity={last} />
+              </Pressable>
+            </Link>
+          ) : (
+            <View
+              style={{
+                backgroundColor: '#fff',
+                borderRadius: 16,
+                padding: 16,
+                borderWidth: 1,
+                borderColor: 'rgba(0,0,0,0.06)',
+              }}
+            >
+              <Text style={{ fontWeight: '600', marginBottom: 6 }}>No activity yet</Text>
+              <Text style={{ opacity: 0.7 }}>
+                Start a session to see your latest activity summary here.
+              </Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  screen: {
+    flex: 1,
+    backgroundColor: '#f6f7fb',
+  },
+
+  /* Header bar */
+  headerBar: {
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
+    backgroundColor: 'white',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between', // Ensures spacing between left and right sections
+    position: 'relative', // Allows absolute positioning for the title
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
+  headerCenter: {
     position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  headerRight: {
+    marginLeft: 'auto', // Pushes the status to the far right
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    borderRadius: 16,
+  },
+  statusOn: {
+    backgroundColor: 'rgba(34,197,94,0.12)',
+    borderColor: 'rgba(34,197,94,0.35)',
+  },
+  statusOff: {
+    backgroundColor: 'rgba(239,68,68,0.12)',
+    borderColor: 'rgba(239,68,68,0.35)',
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 4,
+  },
+  dotOn: { backgroundColor: '#22c55e' },
+  dotOff: { backgroundColor: '#ef4444' },
+  statusText: {
+    fontSize: 12,
+  },
+
+  /* Body */
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 16,
+  },
+  header: {
+    marginTop: 24,
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    color: '#111827',
+  }
 });
