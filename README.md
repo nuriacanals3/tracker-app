@@ -1,5 +1,7 @@
 # Sports tracker app
 
+Work in progress.
+
 ## Get started
 
 1. Install dependencies
@@ -14,10 +16,6 @@
    npx expo start
    ```
 
-## Docs
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
 
 ## Join the community
 
